@@ -16,19 +16,21 @@
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+// WIDTH must be a power of two (cnt.sv uses 32 and 64).
 module popcnt #(parameter WIDTH = 32) (
   input  logic [WIDTH-1:0]        num,    // number to count total ones
   output logic [$clog2(WIDTH):0]  PopCnt  // the total number of ones
 );
 
-  logic [$clog2(WIDTH):0] sum;
-
-  always_comb begin
-    sum = '0;
-    for (int i=0; i<WIDTH; i++) begin : loop
-      sum = (num[i]) ? sum + 1 : sum;
-    end
+  // Balanced adder tree: count each half recursively and add the counts.  A
+  // linear chain of WIDTH increments is WIDTH adders deep, which synthesis tools
+  // that do not restructure it (e.g. Yosys) map to a very slow carry path.
+  if (WIDTH == 1) begin : leaf
+    assign PopCnt = num;
+  end else begin : tree
+    logic [$clog2(WIDTH)-1:0] LoCnt, HiCnt;
+    popcnt #(WIDTH/2) lo(.num(num[WIDTH/2-1:0]),     .PopCnt(LoCnt));
+    popcnt #(WIDTH/2) hi(.num(num[WIDTH-1:WIDTH/2]), .PopCnt(HiCnt));
+    assign PopCnt = {1'b0, LoCnt} + {1'b0, HiCnt};
   end
-
-  assign PopCnt = sum;
 endmodule
