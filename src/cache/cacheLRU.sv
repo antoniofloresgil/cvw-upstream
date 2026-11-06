@@ -44,7 +44,10 @@ module cacheLRU
   genvar                               row;
 
   // split_var: bits of these depend on other bits, which Verilator otherwise treats as a combinational loop
+  // (with 2 ways LRUUpdate has one bit and there is nothing to split)
+  /* verilator lint_off SPLITVAR */
   logic [NUMWAYS-2:0]                  LRUUpdate /* verilator split_var */;
+  /* verilator lint_on SPLITVAR */
   logic [LOGNUMWAYS-1:0]               Intermediate [NUMWAYS-2:0] /* verilator split_var */;
 
   logic [NUMWAYS-1:0]                  FirstZero;
